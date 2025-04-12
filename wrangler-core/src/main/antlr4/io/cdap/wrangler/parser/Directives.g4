@@ -64,6 +64,8 @@ directive
     | stringList
     | numberRanges
     | properties
+    | byteSize            // Added support for BYTE_SIZE tokens
+    | timeDuration        // Added support for TIME_DURATION tokens
   )*?
   ;
 
@@ -140,7 +142,12 @@ numberRange
  ;
 
 value
- : String | Number | Column | Bool
+ : String
+ | Number
+ | Column
+ | Bool
+ | BYTE_SIZE           // Support BYTE_SIZE as value
+ | TIME_DURATION       // Support TIME_DURATION as value
  ;
 
 ecommand
@@ -165,6 +172,14 @@ number
 
 bool
  : Bool
+ ;
+
+byteSize
+ : BYTE_SIZE
+ ;
+
+timeDuration
+ : TIME_DURATION
  ;
 
 condition
@@ -195,7 +210,6 @@ identifierList
  : Identifier (',' Identifier)*
  ;
 
-
 /*
  * Following are the Lexer Rules used for tokenizing the recipe.
  */
@@ -217,7 +231,7 @@ EndsWith : '=$';
 NotEndsWith : '!$';
 PlusEqual : '+=';
 SubEqual : '-=';
-MulEqual : '*=';
+MulEqual : '*='; 
 DivEqual : '/=';
 PerEqual : '%=';
 AndEqual : '&=';
@@ -247,39 +261,76 @@ BackSlash: '\\';
 Dollar   : '$';
 Tilde    : '~';
 
-
+/*
+ * Boolean literal values.
+ */
 Bool
  : 'true'
  | 'false'
  ;
 
+/*
+ * Numeric values (integers and floats).
+ */
 Number
  : Int ('.' Digit*)?
  ;
 
+/*
+ * Byte size units such as 10KB, 256MB, 1GB, etc.
+ */
+BYTE_SIZE
+ : Digit+ BYTE_UNIT
+ ;
+
+/*
+ * Time duration values such as 200ms, 5s, 2min, etc.
+ */
+TIME_DURATION
+ : Digit+ TIME_UNIT
+ ;
+
+/*
+ * Identifier tokens for variable or directive names.
+ */
 Identifier
  : [a-zA-Z_\-] [a-zA-Z_0-9\-]*
  ;
 
+/*
+ * Macro tokens used within expressions like ${macro}.
+ */
 Macro
  : [a-zA-Z_] [a-zA-Z_0-9]*
  ;
 
+/*
+ * Column reference, prefixed with colon.
+ */
 Column
  : ':' [a-zA-Z_\-] [:a-zA-Z_0-9\-]*
  ;
 
+/*
+ * String literals, single or double quoted with escape support.
+ */
 String
  : '\'' ( EscapeSequence | ~('\'') )* '\''
  | '"'  ( EscapeSequence | ~('"') )* '"'
  ;
 
+/*
+ * Escape sequences for string handling.
+ */
 EscapeSequence
    :   '\\' ('b'|'t'|'n'|'f'|'r'|'"'|'\''|'\\')
    |   UnicodeEscape
    |   OctalEscape
    ;
 
+/*
+ * Octal escape sequences.
+ */
 fragment
 OctalEscape
    :   '\\' ('0'..'3') ('0'..'7') ('0'..'7')
@@ -287,27 +338,59 @@ OctalEscape
    |   '\\' ('0'..'7')
    ;
 
+/*
+ * Unicode escape sequences.
+ */
 fragment
 UnicodeEscape
    :   '\\' 'u' HexDigit HexDigit HexDigit HexDigit
    ;
 
+/*
+ * Hexadecimal digits used in Unicode escape.
+ */
 fragment
-   HexDigit : ('0'..'9'|'a'..'f'|'A'..'F') ;
+HexDigit : ('0'..'9'|'a'..'f'|'A'..'F') ;
 
+/*
+ * Skips comments from being processed as tokens.
+ */
 Comment
  : ('//' ~[\r\n]* | '/*' .*? '*/' | '--' ~[\r\n]* ) -> skip
  ;
 
+/*
+ * Skips whitespace.
+ */
 Space
  : [ \t\r\n\u000C]+ -> skip
  ;
 
+/*
+ * Integer rule used by Number.
+ */
 fragment Int
  : '-'? [1-9] Digit* [L]*
  | '0'
  ;
 
+/*
+ * Digit rule used throughout the grammar.
+ */
 fragment Digit
  : [0-9]
+ ;
+
+/*
+ * Byte unit fragment for BYTE_SIZE.
+ */
+fragment BYTE_UNIT
+ : 'KB' | 'MB' | 'GB'
+ ;
+
+/*
+ * Time unit fragment for TIME_DURATION.
+ */
+fragment TIME_UNIT
+ : 'ms' | 's' | 'min'
  ;
