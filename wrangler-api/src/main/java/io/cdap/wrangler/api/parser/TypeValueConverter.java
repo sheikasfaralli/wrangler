@@ -19,7 +19,7 @@ package io.cdap.wrangler.api.parser;
 /**
  * Utility class to convert string values into specific types based on {@link TokenType}.
  * <p>
- * This is used when interpreting directive arguments that require values like
+ * This class is used when interpreting directive arguments that require values like
  * byte sizes ("10KB", "2MB") or time durations ("5s", "100ms").
  */
 public class TypeValueConverter {
@@ -27,27 +27,30 @@ public class TypeValueConverter {
   /**
    * Converts a string input into the appropriate Java object based on the given {@link TokenType}.
    *
-   * @param type  the type of token expected (e.g. BYTE_SIZE, TIME_DURATION)
+   * @param type  the type of token expected (e.g., BYTE_SIZE, TIME_DURATION)
    * @param value the string value to be converted
    * @return the parsed value as an {@link Object}; typically {@link Long} or {@link String}
    * @throws IllegalArgumentException if the conversion fails or the type is unsupported
    */
   public static Object parse(TokenType type, String value) {
+    // Check for null value input and throw an exception if so.
     if (value == null) {
       throw new IllegalArgumentException("Input value cannot be null for TokenType: " + type);
     }
 
+    // Switch statement to handle different TokenType cases.
     switch (type) {
       case BYTE_SIZE:
-        // Converts string like "10KB" to 10240 (bytes)
+        // Converts string like "10KB" to bytes (e.g., 10240 bytes)
         return new ByteSize(value).getBytes();
 
       case TIME_DURATION:
-        // Converts string like "5s" to 5000 (milliseconds)
+        // Converts string like "5s" to milliseconds (e.g., 5000 ms)
         return new TimeDuration(value).getMilliseconds();
 
       default:
-        // Fallback: return the original string
+        // If the TokenType doesn't match known cases, return the original string.
+        // This can be expanded for future types if needed.
         return value;
     }
   }
